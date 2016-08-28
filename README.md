@@ -14,8 +14,8 @@ you are interested in another one let me know and I will work on it.
 Prereq
 ====
 
-1. Android - the process could be similar for IOS but i have not way to test
-   (doesn't need to be rooted)
+1. Android - (doesn't need to be rooted) the process could be similar for IOS
+   but I have not way to test
 
 Getting the Data
 ====

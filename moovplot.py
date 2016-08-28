@@ -1,29 +1,30 @@
 #!/usr/bin/env python
 import zlib
 import sys
-import StringIO
+import io
 import tarfile
 import sqlite3
 import tempfile
 import json
-import matplotlib.pyplot as plt
+import argparse
 
+''' reads file at arg and returns a sqlite db connection '''
 def readfile(path):
 
-    f = open(path, "r")
+    f = open(path, "r+b")
     f.seek(24)
 
-    buf = StringIO.StringIO(zlib.decompress(f.read()))
+    buf = io.BytesIO(zlib.decompress(f.read()))
     tar = tarfile.open(0, "r", buf)
 
-    db = StringIO.StringIO()
+    tmpf = tempfile.NamedTemporaryFile()
+    dbtar = None
     for member in tar.getmembers():
         if not member.name.startswith("apps/cc.moov.one/"):
             continue
         if member.name.endswith("user.db"):
             dbtar = tar.extractfile(member)
-            db.write(dbtar.read())
-            db.seek(0)
+            tmpf.write(dbtar.read())
             dbtar.close()
             break
 
@@ -34,32 +35,22 @@ def readfile(path):
     f.close()
     buf.close()
     tar.close()
+    tmpf.flush()
 
-    return db
+    return sqlite3.connect(tmpf.name).cursor()
 
-def opensqlite(f):
-
-    tmpf = tempfile.NamedTemporaryFile()
-    tmpf.write(f.read())
-
-    f.close()
-    return sqlite3.connect(tmpf.name)
-
-def query_csv(cursor, q, fields):
+def query_csv(q, fields):
     for f in fields:
-        sys.stdout.write(f + ",")
-    print
+        print("%s," % f, end="")
+    print()
     for r in c.execute(q):
         for f in fields:
-            sys.stdout.write(str(json.loads(r[0])[f]) + ",")
-        print
+            print("%s," % str(json.loads(r[0])[f]), end="")
+        print()
 
 
 
-db = readfile(sys.argv[1])
-
-conn = opensqlite(db)
-c = conn.cursor()
-query_csv(c, "select program_specific_data from workouts",  ["lap_count", "stroke_count"])
+c = readfile(sys.argv[1])
+query_csv("SELECT program_specific_data AS user_data FROM workouts",  ["lap_count", "stroke_count"])
 
 c.close()
