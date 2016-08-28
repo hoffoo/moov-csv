@@ -1,5 +1,4 @@
-Moov
-====
+# Moov
 
 I like my Moov fitness tracker but it does a shit job at visualizing swim
 data over time. So far there is no way to export.
@@ -11,14 +10,27 @@ data into whatever app you wish and plot away.
 Presumably it would work for the other workout modes but I don't use them. If
 you are interested in another one let me know and I will work on it.
 
-Prereq
-====
+### Prereq
 
 1. Android - (doesn't need to be rooted) the process could be similar for IOS
    but I have not way to test
 
-Getting the Data
-====
+### Features
+```
+usage: moovplot.py [-h] [--csv] [--sqlite] FILE
+
+moov csv and plot
+
+positional arguments:
+  FILE        android backup file
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --csv       output to csv
+  --sqlite    launch sqlite shell for exploring
+```
+
+### Getting the Data
 
 Android:
 

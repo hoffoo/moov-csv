@@ -7,18 +7,31 @@ import sqlite3
 import tempfile
 import json
 import argparse
+import subprocess
 
-''' reads file at arg and returns a sqlite db connection '''
+argp = argparse.ArgumentParser(description="moov csv and plot")
+argp.add_argument("--csv",    action="store_true", help="output to csv")
+argp.add_argument("--sqlite", action="store_true", help="launch sqlite shell for exploring")
+argp.add_argument("FILE", help="android backup file")
+
+args = argp.parse_args()
+#sys.exit(1)
+
+''' reads android archive and returns a tempfile of the sqlite db'''
 def readfile(path):
 
     f = open(path, "r+b")
+    # im not sure why skip the first 24 bytes
+    # something about how android zips the tarball
     f.seek(24)
 
+    #unzip
     buf = io.BytesIO(zlib.decompress(f.read()))
     tar = tarfile.open(0, "r", buf)
 
-    tmpf = tempfile.NamedTemporaryFile()
+    # extract sqlite databases from archive
     dbtar = None
+    tmpf = tempfile.NamedTemporaryFile()
     for member in tar.getmembers():
         if not member.name.startswith("apps/cc.moov.one/"):
             continue
@@ -28,7 +41,6 @@ def readfile(path):
             dbtar.close()
             break
 
-
     if dbtar == None:
         raise Exception("failed finding user.db in archive")
 
@@ -37,20 +49,36 @@ def readfile(path):
     tar.close()
     tmpf.flush()
 
-    return sqlite3.connect(tmpf.name).cursor()
+    return tmpf
 
-def query_csv(q, fields):
-    for f in fields:
-        print("%s," % f, end="")
-    print()
-    for r in c.execute(q):
+
+''' moov seems to store data in a single row as json blobs.
+    queries passed here should select only the json rows, and
+    fields are the json keys we are interested in'''
+def query_json_csv(sql, q, fields):
+
+    print(",".join(fields))
+    for r in sql.execute(q):
         for f in fields:
-            print("%s," % str(json.loads(r[0])[f]), end="")
+            for col in r:
+                js = json.loads(col)
+                if f in js:
+                    print("%s," % js[f], end="")
         print()
 
 
+dbfile = readfile(args.FILE)
+if args.sqlite:
+    subprocess.run(["/usr/bin/sqlite3", dbfile.name])
 
-c = readfile(sys.argv[1])
-query_csv("SELECT program_specific_data AS user_data FROM workouts",  ["lap_count", "stroke_count"])
+if args.csv:
+    sql = sqlite3.connect(dbfile.name).cursor()
+    query_json_csv(sql,
+            "SELECT program_specific_data, local_cache FROM workouts",
+            ["lap_count",
+             "stroke_count",
+             "distance",
+             "distance_per_stroke",
+             "stroke_rate"])
+    sql.close()
 
-c.close()
