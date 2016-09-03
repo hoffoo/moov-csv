@@ -52,18 +52,27 @@ def readfile(path):
     return tmpf
 
 
-''' moov seems to store data in a single row as json blobs.
-    queries passed here should select only the json rows, and
-    fields are the json keys we are interested in'''
-def query_json_csv(sql, q, fields):
+''' moov seems to store data some data in json blobs we attempt to decode into
+json if we see a str and select the fields. otherwise we simply print the field'''
+def query(sql, q, fields):
 
+    sql.execute(q)
     print(",".join(fields))
-    for r in sql.execute(q):
-        for f in fields:
-            for col in r:
-                js = json.loads(col)
-                if f in js:
-                    print("%s," % js[f], end="")
+    for r in sql.fetchall():
+        for col in r:
+            for f in fields:
+                # first try to get the field from json
+                if type(col) == str:
+                    js = json.loads(col)
+                    if f in js:
+                        print("%s," % js[f], end="")
+                    continue
+
+                # failed to get this col from json, try from the row
+                try:
+                    print("%s," % r[f], end="")
+                except IndexError:
+                    pass
         print()
 
 
@@ -72,13 +81,24 @@ if args.sqlite:
     subprocess.run(["/usr/bin/sqlite3", dbfile.name])
 
 if args.csv:
-    sql = sqlite3.connect(dbfile.name).cursor()
-    query_json_csv(sql,
-            "SELECT program_specific_data, local_cache FROM workouts",
-            ["lap_count",
+    conn = sqlite3.connect(dbfile.name)
+    conn.row_factory = sqlite3.Row
+    sql = conn.cursor()
+    print("\n\nswims:")
+    query(sql,
+            "SELECT duration,program_specific_data, local_cache FROM workouts WHERE workout_type = 2",
+            ["duration",
+             "lap_count",
              "stroke_count",
              "distance",
              "distance_per_stroke",
              "stroke_rate"])
+    print("\n\nruns:")
+    query(sql,
+            "SELECT duration,local_cache FROM workouts WHERE workout_type = 0",
+            ["duration",
+             "average_cadence",
+             "average_speed",
+             "distance"])
     sql.close()
 
