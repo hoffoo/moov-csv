@@ -7,17 +7,18 @@ This script uses an android backup of the moov app to extract the sqlite
 database and run queries against it. It outputs CSV, you can then import that
 data into whatever app you wish and plot away.
 
-It prints run and swim data. It will probably work for other workout modes, 
+It prints run and swim data. It will probably work for other workout modes,
 let me know if you are interested and ill add.
 
 ### Prereq
 
 1. Android - (doesn't need to be rooted) the process could be similar for IOS
    but I have not way to test
+1. Android development tools - used for getting a backup of the moov app
 
 ### Features
 ```
-usage: moovplot.py [-h] [--csv] [--sqlite] FILE
+usage: moovplot.py [-h] [--csv] [--sqlite] [-b] [FILE]
 
 moov csv and plot
 
@@ -28,10 +29,10 @@ optional arguments:
   -h, --help  show this help message and exit
   --csv       output to csv
   --sqlite    launch sqlite shell for exploring
-```
+  -b          generate a backup to use
 
-```
-$ ./moovplot.py --csv /tmp/bk 
+# for example
+./moovplot.py -b --csv
 
 
 swims:
