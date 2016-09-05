@@ -12,7 +12,8 @@ import subprocess
 argp = argparse.ArgumentParser(description="moov csv and plot")
 argp.add_argument("--csv",    action="store_true", help="output to csv")
 argp.add_argument("--sqlite", action="store_true", help="launch sqlite shell for exploring")
-argp.add_argument("FILE", help="android backup file")
+argp.add_argument("-b", action="store_true", help="generate a backup to use")
+argp.add_argument("FILE", nargs="?", default="", help="android backup file")
 
 args = argp.parse_args()
 #sys.exit(1)
@@ -75,8 +76,16 @@ def query(sql, q, fields):
                     pass
         print()
 
+if args.FILE == "" and not args.b:
+    argp.error("either specify a backup file or the -b option")
 
-dbfile = readfile(args.FILE)
+bkfile = args.FILE
+if args.b:
+    tmpf = tempfile.NamedTemporaryFile()
+    subprocess.run(["adb", "backup", "-f", tmpf.name, "-noapk", "cc.moov.one"])
+    bkfile = tmpf.name
+
+dbfile = readfile(bkfile)
 if args.sqlite:
     subprocess.run(["/usr/bin/sqlite3", dbfile.name])
 
