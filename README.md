@@ -15,6 +15,7 @@ let me know if you are interested and ill add.
 1. Android - (doesn't need to be rooted) the process could be similar for IOS
    but I have not way to test
 1. Android development tools - used for getting a backup of the moov app
+1. Python 2, pr for python 3 is welcome
 
 ### Features
 ```
